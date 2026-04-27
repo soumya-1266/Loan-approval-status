@@ -1,0 +1,20 @@
+Loan Approval Full Project
+Files
+main.py - Shared ML training code
+
+flask_app.py - Flask web application
+
+streamlit_app.py - Streamlit GUI application
+
+sample_loan_data.csv - Sample dataset
+
+requirements.txt - Dependencies
+
+Run -- Install dependencies
+pip install -r requirements.txt
+
+Run Flask app ---  
+python flask_app.py
+
+Run Streamlit app ---
+streamlit run streamlit_app.py
