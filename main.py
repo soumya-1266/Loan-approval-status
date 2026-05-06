@@ -17,21 +17,23 @@ def load_and_train_model(data_path="sample_loan_data.csv"):
 
     df = pd.read_csv(data_path, sep='\t', names=columns, header=0)
 
-    # Convert target
+    # ✅ Clean data
     df["Loan_Status"] = df["Loan_Status"].map({"Y": 1, "N": 0})
     df = df.dropna(subset=["Loan_Status"])
 
-    # Drop Loan_ID
+    # 🔥 Fix Dependents
+    df["Dependents"] = df["Dependents"].replace("3+", "3")
+
+    # Drop ID
     df = df.drop(columns=["Loan_ID"], errors="ignore")
 
     X = df.drop("Loan_Status", axis=1)
     y = df["Loan_Status"]
 
-    # 🔍 Check class distribution
     print("\nClass Distribution:")
     print(y.value_counts())
 
-    # Separate features
+    # Features
     numeric_features = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
     categorical_features = X.select_dtypes(include=["object"]).columns.tolist()
 
@@ -51,14 +53,14 @@ def load_and_train_model(data_path="sample_loan_data.csv"):
         ("cat", categorical_transformer, categorical_features)
     ])
 
-    # ✅ Stratified split (IMPORTANT FIX)
+    # Split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # ✅ Balanced models
+    # Models
     models = {
-        "LogisticRegression": LogisticRegression(max_iter=1000, class_weight="balanced"),
+        "LogisticRegression": LogisticRegression(max_iter=1000, class_weight="balanced", solver='liblinear'),
         "RandomForest": RandomForestClassifier(random_state=42, class_weight="balanced"),
         "SVM": SVC(probability=True, random_state=42, class_weight="balanced")
     }
@@ -85,10 +87,8 @@ def load_and_train_model(data_path="sample_loan_data.csv"):
         print(f"F1 Score: {f1:.4f}")
         print("Confusion Matrix:")
         print(cm)
-        print("Classification Report:")
         print(classification_report(y_test, y_pred))
 
-        # ✅ Select best model using F1-score
         if f1 > best_score:
             best_score = f1
             best_model = model
@@ -98,27 +98,7 @@ def load_and_train_model(data_path="sample_loan_data.csv"):
                 "confusion_matrix": cm
             }
 
-        # 🔍 Feature Importance (RandomForest only)
-        if name == "RandomForest":
-            feature_names = model.named_steps['preprocessor'].get_feature_names_out()
-            importances = model.named_steps['classifier'].feature_importances_
-
-            print("\nTop Important Features:")
-            for f, imp in sorted(zip(feature_names, importances), key=lambda x: -x[1])[:10]:
-                print(f"{f}: {imp:.4f}")
-
-    print("\n Best Model Selected")
+    print("\nBest Model Selected")
     print(f"F1 Score: {best_score:.4f}")
 
     return best_model, X_test, y_test, best_metrics
-
-
-# 🚀 Run
-if __name__ == "__main__":
-    model, X_test, y_test, metrics = load_and_train_model()
-
-    print("\nFinal Model Evaluation:")
-    print(f"Accuracy: {metrics['accuracy']:.4f}")
-    print(f"F1 Score: {metrics['f1_score']:.4f}")
-    print("Confusion Matrix:")
-    print(metrics['confusion_matrix'])
